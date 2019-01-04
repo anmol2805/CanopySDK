@@ -1,6 +1,7 @@
 package com.canopydevelopers.canopyauth;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -10,11 +11,10 @@ import org.json.JSONObject;
 
 public class CanopyLogin {
     public void generate_token(String student_id,
-                                         String password,
-                                         String url,
-                                         Context context,
-                                         Response.Listener<JSONObject> listener,
-                                         Response.ErrorListener errlsn
+                               String password,
+                               String url,
+                               final Context context,
+                               Response.ErrorListener errlsn
     ){
         JSONObject credentials = new JSONObject();
         try {
@@ -25,7 +25,28 @@ public class CanopyLogin {
         }
         JsonObjectRequest loginRequest = new JsonObjectRequest(Request.Method.POST,
                 url,
-                credentials, listener, errlsn);
+                credentials, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    System.out.println(response.getString("token").length() + " " + response.getJSONObject("refreshtoken").getString("refreshtoken").length());
+                    SharedPreferences sharedPreferences = context.getSharedPreferences("com.canopydevelopers.canopyauth",Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString("authtoken",response.getString("token"));
+                    editor.putString("refreshtoken",response.getJSONObject("refreshtoken").getString("refreshtoken"));
+                    if(editor.commit()){
+                        AuthConfig authConfig = new AuthConfig(context);
+                        if(authConfig.writeloginstatus(true)){
+                            System.out.println("loginstatus true");
+                        }
+
+
+                    }
+                    } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, errlsn);
         Mysingleton.getInstance(context).addToRequestqueue(loginRequest);
     }
 }
