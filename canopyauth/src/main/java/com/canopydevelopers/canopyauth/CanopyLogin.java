@@ -4,17 +4,24 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import com.android.volley.Request;
 import com.android.volley.Response;
+import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.canopydevelopers.mysingleton.Mysingleton;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class CanopyLogin {
+    CanopyAuthCallback canopyAuthCallback = null;
+    Context context;
+
+    public CanopyLogin(CanopyAuthCallback canopyAuthCallback, Context context) {
+        this.canopyAuthCallback = canopyAuthCallback;
+        this.context = context;
+    }
+
     public void generate_token(String student_id,
                                String password,
-                               String url,
-                               final Context context,
-                               Response.ErrorListener errlsn
+                               String url
     ){
         JSONObject credentials = new JSONObject();
         try {
@@ -30,23 +37,30 @@ public class CanopyLogin {
             public void onResponse(JSONObject response) {
                 try {
                     System.out.println(response.getString("token").length() + " " + response.getJSONObject("refreshtoken").getString("refreshtoken").length());
-                    SharedPreferences sharedPreferences = context.getSharedPreferences("com.canopydevelopers.canopyauth",Context.MODE_PRIVATE);
+                    SharedPreferences sharedPreferences = context.getSharedPreferences("com.canopydevelopers.canopyauth", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString("authtoken",response.getString("token"));
-                    editor.putString("refreshtoken",response.getJSONObject("refreshtoken").getString("refreshtoken"));
-                    if(editor.commit()){
+                    editor.putString("authtoken", response.getString("token"));
+                    editor.putString("refreshtoken", response.getJSONObject("refreshtoken").getString("refreshtoken"));
+                    if (editor.commit()) {
                         AuthConfig authConfig = new AuthConfig(context);
-                        if(authConfig.writeloginstatus(true)){
-                            System.out.println("loginstatus true");
+                        if (authConfig.writeloginstatus(true)) {
+                            if (canopyAuthCallback != null) {
+                                canopyAuthCallback.onLoginSuccess(true);
+                            }
                         }
-
-
                     }
-                    } catch (JSONException e) {
+                } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
-        }, errlsn);
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                if(canopyAuthCallback!=null){
+                    canopyAuthCallback.onLoginFailure(error.getMessage());
+                }
+            }
+        });
         Mysingleton.getInstance(context).addToRequestqueue(loginRequest);
     }
 }
