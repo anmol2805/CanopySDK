@@ -11,8 +11,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class CanopyLogin {
-    CanopyAuthCallback canopyAuthCallback = null;
-    Context context;
+    private CanopyAuthCallback canopyAuthCallback = null;
+    private Context context;
 
     public CanopyLogin(CanopyAuthCallback canopyAuthCallback, Context context) {
         this.canopyAuthCallback = canopyAuthCallback;
@@ -36,7 +36,6 @@ public class CanopyLogin {
             @Override
             public void onResponse(JSONObject response) {
                 try {
-                    System.out.println(response.getString("token").length() + " " + response.getJSONObject("refreshtoken").getString("refreshtoken").length());
                     SharedPreferences sharedPreferences = context.getSharedPreferences("com.canopydevelopers.canopyauth", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPreferences.edit();
                     editor.putString("authtoken", response.getString("token"));
@@ -57,7 +56,16 @@ public class CanopyLogin {
             @Override
             public void onErrorResponse(VolleyError error) {
                 if(canopyAuthCallback!=null){
-                    canopyAuthCallback.onLoginFailure(error.getMessage());
+                    if(error.toString().contains("ServerError")){
+                        canopyAuthCallback.onLoginFailure("Password is incorrect");
+                    }
+                    else if(error.toString().contains("NoConnectionError")){
+                        canopyAuthCallback.onLoginFailure("Please check your network connection");
+                    }
+                    else{
+                        canopyAuthCallback.onLoginFailure("Server not responding");
+                    }
+
                 }
             }
         });
