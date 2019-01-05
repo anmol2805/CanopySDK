@@ -86,6 +86,7 @@ public class CanopyLogin {
             public void onResponse(JSONObject response) {
                 try {
                     editor = sharedPreferences.edit();
+                    editor.putString("authtoken", response.getString("token"));
                     editor.putString("refreshtoken", response.getJSONObject("refreshtoken").getString("refreshtoken"));
                     if(editor.commit()){
                         System.out.println("refresh token changed");
