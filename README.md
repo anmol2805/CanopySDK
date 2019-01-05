@@ -46,7 +46,7 @@ canopyAuthCallback = object : CanopyAuthCallback {
             }
         }
         val canopyLogin = CanopyLogin(canopyAuthCallback, this)
-        canopyLogin.generate_token("******","******","http://14.139.198.171:8080/token/generate-token")
+        canopyLogin.generate_token(student_id,hibiscus_password,"http://14.139.198.171:8080/token/generate-token")
 ```
 
 ### For some devices operating on android P or API level 28(optional):
