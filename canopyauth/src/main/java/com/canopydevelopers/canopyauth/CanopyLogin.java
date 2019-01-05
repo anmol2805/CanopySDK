@@ -13,11 +13,13 @@ import org.json.JSONObject;
 public class CanopyLogin {
     private CanopyAuthCallback canopyAuthCallback = null;
     private Context context;
-
+    private SharedPreferences sharedPreferences;
+    private SharedPreferences.Editor editor;
     public CanopyLogin(CanopyAuthCallback canopyAuthCallback, Context context) {
         this.canopyAuthCallback = canopyAuthCallback;
         this.context = context;
-    }
+        sharedPreferences = context.getSharedPreferences("com.canopydevelopers.canopyauth", Context.MODE_PRIVATE);
+        }
 
     public void generate_token(String student_id,
                                String password,
@@ -36,8 +38,7 @@ public class CanopyLogin {
             @Override
             public void onResponse(JSONObject response) {
                 try {
-                    SharedPreferences sharedPreferences = context.getSharedPreferences("com.canopydevelopers.canopyauth", Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor = sharedPreferences.edit();
                     editor.putString("authtoken", response.getString("token"));
                     editor.putString("refreshtoken", response.getJSONObject("refreshtoken").getString("refreshtoken"));
                     if (editor.commit()) {
@@ -70,5 +71,35 @@ public class CanopyLogin {
             }
         });
         Mysingleton.getInstance(context).addToRequestqueue(loginRequest);
+    }
+
+    public void refresh_token(){
+        JSONObject parameter = new JSONObject();
+
+        try {
+            parameter.put("refreshtoken",sharedPreferences.getString("refreshtoken","No refresh token found"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        JsonObjectRequest refreshtokenrequest = new JsonObjectRequest(Request.Method.POST, "http://14.139.198.171:8080/token/refresh-token", parameter, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    editor = sharedPreferences.edit();
+                    editor.putString("refreshtoken", response.getJSONObject("refreshtoken").getString("refreshtoken"));
+                    if(editor.commit()){
+                        System.out.println("refresh token changed");
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        });
+        Mysingleton.getInstance(context).addToRequestqueue(refreshtokenrequest);
     }
 }
